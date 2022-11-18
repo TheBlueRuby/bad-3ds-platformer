@@ -37,12 +37,15 @@ int main(int argc, char *argv[])
 	float playerX = SCREEN_WIDTH / 2.0;
 	float playerY = SCREEN_HEIGHT / 2.0;
 
-	Collider platforms[3] = 
-	{
-		{x : 0, y : 230, width : 400, height : 10, color : C2D_Color32(0x33, 0xEE, 0x55, 0xFF)},
-		{x : 100, y : 100, width : 250, height : 10, color : C2D_Color32(0xEE, 0x99, 0x55, 0xFF)},
-		{x : 50, y : 200, width : 150, height : 10, color : C2D_Color32(0xEE, 0x99, 0x55, 0xFF)},
-	};
+	float playerVelocityX = 0.0;
+	float playerVelocityY = 0.0;
+
+	Collider platforms[3] =
+		{
+			{x : 0, y : 230, width : 400, height : 10, color : C2D_Color32(0x33, 0xEE, 0x55, 0xFF)},
+			{x : 100, y : 100, width : 250, height : 10, color : C2D_Color32(0xEE, 0x99, 0x55, 0xFF)},
+			{x : 50, y : 200, width : 150, height : 10, color : C2D_Color32(0xEE, 0x99, 0x55, 0xFF)},
+		};
 
 	// Main loop
 	while (aptMainLoop())
@@ -60,29 +63,47 @@ int main(int argc, char *argv[])
 
 		printf("\x1b[3;1HUse D-Pad or Circle Pad to move!");
 
-		printf("\x1b[7;1HCPU:     %6.2f%%\x1b[K", C3D_GetProcessingTime() * 6.0f);
-		printf("\x1b[8;1HGPU:     %6.2f%%\x1b[K", C3D_GetDrawingTime() * 6.0f);
-		printf("\x1b[9;1HCmdBuf:  %6.2f%%\x1b[K", C3D_GetCmdBufUsage() * 100.0f);
+		printf("\x1b[5;1HPlayer X Pos %f", playerX);
+		printf("\x1b[6;1HPlayer Y Pos %f", playerY);
+
+		printf("\x1b[9;1HPlayer X Velocity %f", playerVelocityX);
+		printf("\x1b[10;1HPlayer Y Velocity %f", playerVelocityY);
+
+		printf("\x1b[15;1HCPU:     %6.2f%%\x1b[K", C3D_GetProcessingTime() * 6.0f);
+		printf("\x1b[16;1HGPU:     %6.2f%%\x1b[K", C3D_GetDrawingTime() * 6.0f);
+		printf("\x1b[17;1HCmdBuf:  %6.2f%%\x1b[K", C3D_GetCmdBufUsage() * 100.0f);
 
 		// Process player input
-
-		if (((kDown & KEY_LEFT) || (kDown & KEY_CPAD_LEFT)) && (playerX > 25))
+		if ((((kDown & KEY_LEFT) || (kDown & KEY_CPAD_LEFT)) && (playerX > 25)) || (((kDown & KEY_RIGHT) || (kDown & KEY_CPAD_RIGHT)) && (playerX < SCREEN_WIDTH - 25)))
 		{
-			playerX -= 5.0;
+			if ((((kDown & KEY_LEFT) || (kDown & KEY_CPAD_LEFT)) && (playerX > 25)) && playerVelocityX >= -5)
+			{
+				playerVelocityX -= 5.0;
+			}
+			if (((((kDown & KEY_RIGHT) || (kDown & KEY_CPAD_RIGHT)) && (playerX < SCREEN_WIDTH - 25))) && playerVelocityX <= 5)
+			{
+				playerVelocityX += 5.0;
+			}
+		} else if ((playerVelocityX >= 0.5) || !((playerX > 25) || (playerX < SCREEN_WIDTH - 25))) {
+			playerVelocityX *= 0.75;
+		} else {
+			playerVelocityX = 0;
 		}
-		if (((kDown & KEY_RIGHT) || (kDown & KEY_CPAD_RIGHT)) && (playerX < SCREEN_WIDTH - 25))
+
+		if (playerY < SCREEN_HEIGHT - 25)
 		{
-			playerX += 5.0;
+			playerVelocityY += 5.0;
+		} else {
+			playerVelocityY = 0;
 		}
 
 		if (((newDown & KEY_UP) || (newDown & KEY_CPAD_UP) || (newDown & KEY_A) || (newDown & KEY_B)) && (playerY > 25))
 		{
-			playerY -= 10.0;
+			playerVelocityY -= 20.0;
 		}
-		if (playerY < SCREEN_HEIGHT - 25)
-		{
-			playerY += 5.0;
-		}
+
+		playerX += playerVelocityX;
+		playerY += playerVelocityY;
 
 		// Render the scene
 		C3D_FrameBegin(C3D_FRAME_SYNCDRAW);
@@ -95,7 +116,7 @@ int main(int argc, char *argv[])
 		}
 
 		C2D_DrawRectangle(playerX - 25, playerY - 25, 0, 50, 50, playerColor, playerColor, playerColor, playerColor);
-	
+
 		C3D_FrameEnd(0);
 	}
 
